@@ -1,5 +1,5 @@
 from WordleBenchmark.solver_interface import WordleSolver
-from WordleBenchmark.wordle import Wordle
+from WordleBenchmark.wordle import Wordle, GREEN, GRAY, YELLOW, KEYS, NORMAL
 import json
 import time
 
@@ -70,6 +70,44 @@ def play(word):
         print(Wordle.Score(guess, word))
     print(Wordle.Score(guess, word))
     print(solver.possible_words)
+
+class UnknownScore(Wordle.Score):
+    def __init__(self, word: str, colors: tuple):
+        if len(word) != len(colors):
+            raise ValueError(f"Provided word \"{word}\" is {len(word)} characters, but should be {len(colors)} characters")
+        self.word = word
+        self.score = list(colors)
+        self.hash = sum([(4**i)*self.score[i] for i in range(len(self.score))])
+        self.win = min(colors) == GREEN
+
+def solve_unknown():
+    solver = PatientOnestep()
+    guess = solver.get_first_guess()
+    print(guess+" "*50)
+    score_string = ""
+    print()
+    while len(score_string) != len(guess) or min(score_string, key=lambda a: 0 if a in 'o-x' else 1) not in 'o-x':
+        print("\033[A"+" "*50+"\r",end="")
+        score_string = input(f"Score ({KEYS[GREEN]}o{KEYS[YELLOW]}-{KEYS[GRAY]}x{NORMAL}): ")
+    colors = tuple({'o':GREEN, '-': YELLOW, 'x': GRAY}[c] for c in score_string)
+    score = UnknownScore(guess, colors)
+    print("\033[A\033[A",end="")
+    print(score)
+    while not score.win:
+        guess = solver.get_guess(score)
+        print(guess+" "*50)
+        score_string = ""
+        print()
+        while len(score_string) != len(guess) or min(score_string, key=lambda a: 0 if a in 'o-x' else 1) not in 'o-x':
+            print("\033[A"+" "*50+"\r",end="")
+            score_string = input(f"Score ({KEYS[GREEN]}o{KEYS[YELLOW]}-{KEYS[GRAY]}x{NORMAL}): ")
+        colors = tuple({'o':GREEN, '-': YELLOW, 'x': GRAY}[c] for c in score_string)
+        score = UnknownScore(guess, colors)
+        print("\033[A\033[A",end="")
+        print(score)
+    print()
+    
+    
     
 def generate_cache(first_guess):
     words = PatientOnestep().possible_words
@@ -97,11 +135,12 @@ if __name__ == "__main__":
     2. Toggle Hardmode ({HARDMODE})
     3. Generate Cache for starting word
     4. Solve for known word
-    5. Run Benchmark
-    6. Quit
+    5. Solve for unknown word
+    6. Run Benchmark
+    7. Quit
             """)
         option = input("Select an option: ")
-        if option not in {"1", "2", "3", "4", "5", "6"}:
+        if option not in {"1", "2", "3", "4", "5", "6", "7"}:
             print("Invalid Option\n")
             continue
         if option == "1":
@@ -137,8 +176,10 @@ if __name__ == "__main__":
                 continue
             play(temp)
         if option == "5":
-            benchmark()
+            solve_unknown()
         if option == "6":
+            benchmark()
+        if option == "7":
             print("Goodbye!")
             running = False
         time.sleep(1)
