@@ -81,6 +81,7 @@ class UnknownScore(Wordle.Score):
         self.win = min(colors) == GREEN
 
 def solve_unknown():
+    print()
     solver = PatientOnestep()
     guess = solver.get_first_guess()
     print(guess+" "*50)
