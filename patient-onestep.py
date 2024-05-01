@@ -42,6 +42,23 @@ class PatientOnestep(WordleSolver):
                 best_word = word
         return best_word
     
+    def sorted_guess_list(self):
+        guesses = []
+        for word in (self.possible_words if HARDMODE else self.valid_words):
+            groups = dict()
+            for next_guess in self.possible_words:
+                score = Wordle.Score(word, next_guess)
+                if score.hash not in groups:
+                    groups[score.hash] = 1
+                else:
+                    groups[score.hash] += 1
+            expected_size = sum([g**2 for g in groups.values()])
+            if word in self.possible_words: expected_size -= 1
+            expected_size **= 0.5
+            guesses.append((word, expected_size))
+        guesses.sort(key=lambda a: a[1])
+        return guesses
+    
     def get_guess(self, score: Wordle.Score) -> str:
         self.possible_words = list(filter(lambda word: Wordle.Score(score.word, word) == score, self.possible_words))
         if cache is not None and not HARDMODE:
